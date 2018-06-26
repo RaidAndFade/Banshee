@@ -1,0 +1,253 @@
+C: SID_AUTH_INFO
+(UINT32) Protocol ID
+(UINT32) Platform code
+(UINT32) Product code
+(UINT32) Version byte
+(UINT32) Language code
+(UINT32) Local IP
+(UINT32) Time zone bias
+(UINT32) MPQ locale ID
+(UINT32) User language ID
+(STRING) Country abbreviation
+(STRING) Country
+
+0000   ff 50 3a 00 00 00 00 00 36 38 58 49 50 58 33 57   ÿP:.....68XIPX3W
+0010   1d 00 00 00 53 55 6e 65 0a 00 01 8b f0 00 00 00   ....SUne....ð...
+0020   09 04 00 00 09 04 00 00 55 53 41 00 55 6e 69 74   ........USA.Unit
+0030   65 64 20 53 74 61 74 65 73 00                     ed States.
+
+S: SID_PING - calc ping time
+(UINT32) Ping Value
+
+0000   ff 25 08 00 bb fa 2a da                           ÿ%..»ú*Ú
+
+C: SID_PING RESPONSE	
+(UINT32) Ping Value
+
+0000   ff 25 08 00 bb fa 2a da                           ÿ%..»ú*Ú
+
+S: SID_AUTH_INFO
+  (UINT32) Logon type
+  (UINT32) Server token
+  (UINT32) UDP value
+(FILETIME) CheckRevision MPQ filetime
+  (STRING) CheckRevision MPQ filename
+  (STRING) CheckRevision ValueString
+  (BYTE[]) 128-byte Server signature
+0000   ff 50 e8 00 02 00 00 00 e8 67 f4 3d cb 34 00 00   ÿPè.....ègô=Ë4..
+0010   00 7d 4e 8f 82 b8 d1 01 76 65 72 2d 49 58 38 36   .}N..¸Ñ.ver-IX86
+0020   2d 33 2e 6d 70 71 00 41 3d 31 36 31 39 35 33 30   -3.mpq.A=1619530
+0030   30 34 37 20 43 3d 31 32 32 39 38 32 39 30 37 39   047 C=1229829079
+0040   20 42 3d 31 37 33 33 32 32 36 34 37 36 20 34 20    B=1733226476 4 
+0050   41 3d 41 2b 53 20 42 3d 42 5e 43 20 43 3d 43 5e   A=A+S B=B^C C=C^
+0060   41 20 41 3d 41 5e 42 00 50 a2 e7 1b 2c d5 9c af   A A=A^B.P¢ç.,Õ.¯
+0070   eb 8d f9 5b df de dc fb cc 4f fa 97 c1 4b 9d f3   ë.ù[ßÞÜûÌOú.ÁK.ó
+0080   80 85 91 70 e0 60 85 05 0f 91 04 29 9a 4b f7 0c   ...pà`.....).K÷.
+0090   ff dd de 0d 06 99 0c 9f 0a 7e 6d c0 78 2c a5 af   ÿÝÞ......~mÀx,¥¯
+00a0   7f 6f a1 fd af 74 9f 27 98 7e d1 21 73 6c 92 98   .o¡ý¯t.'.~Ñ!sl..
+00b0   29 e6 69 0a 53 8a 2c 3a 17 91 4f 67 6e 8d 6b 0a   )æi.S.,:..Ogn.k.
+00c0   ab 4a 1d 48 01 1f 65 b1 33 7e 04 6d 98 f6 47 c7   «J.H..e±3~.m.öGÇ
+00d0   2c 6b 56 15 9d 52 20 a6 20 81 f0 db 2a 0c 01 54   ,kV..R ¦ .ðÛ*..T
+00e0   d6 1c 54 a3 f6 fc 60 6d                           Ö.T£öü`m
+
+C: SID_AUTH_CHECK
+(UINT32) Client Token
+(UINT32) EXE Version
+(UINT32) EXE Hash
+(UINT32) Number of CD-keys in this packet
+(UINT32) Spawn Key (1 is TRUE, 0 is FALSE) **
+
+For each Key:
+   (UINT32)     Key length
+   (UINT32)     Key Product value 
+   (UINT32)     Key Public value
+   (UINT32)     Unknown (0)
+    (UINT8)[20] Hashed Key Data
+
+(STRING) EXE Information
+(STRING) Key owner name
+
+0000   ff 51 9c 00 a0 49 99 10 0f 02 1d 01 2e 46 b3 ed   ÿQ.. I.......F³í
+0010   02 00 00 00 00 00 00 00 1a 00 00 00 0e 00 00 00   ................
+0020   c2 ee cc 00 00 00 00 00 02 f5 e9 68 29 e3 96 53   ÂîÌ......õéh)ã.S
+0030   d4 79 59 77 6a 47 55 e7 73 ee 45 4d 1a 00 00 00   ÔyYwjGUçsîEM....
+0040   12 00 00 00 e0 76 8a 00 00 00 00 00 fa 9f 0b 4c   ....àv......ú..L
+0050   5d 5f e0 57 db b1 79 11 86 93 83 73 69 dd 78 7b   ]_àWÛ±y....siÝx{
+0060   57 61 72 63 72 61 66 74 20 49 49 49 2e 65 78 65   Warcraft III.exe
+0070   20 30 35 2f 30 34 2f 31 38 20 30 33 3a 31 31 3a    05/04/18 03:11:
+0080   32 36 20 31 34 38 35 34 36 33 32 00 44 45 53 4b   26 14854632.DESK
+0090   54 4f 50 2d 33 4b 34 4b 36 38 32 00               TOP-3K4K682.
+
+S: SID_AUTH_CHECK RESPONSE
+(UINT32) Result
+(STRING) Additional Information
+0000   ff 51 09 00 00 00 00 00 00                        ÿQ.......
+
+C: SID_GETFILETIME
+(UINT32) Request ID
+(UINT32) Unknown
+(STRING) Filename
+0000   ff 33 24 00 01 00 00 00 00 00 00 00 74 65 72 6d   ÿ3$.........term
+0010   73 6f 66 73 65 72 76 69 63 65 2d 65 6e 55 53 2e   sofservice-enUS.
+0020   74 78 74 00                                       txt.
+
+C: SID_GETFILETIME
+0000   ff 33 20 00 02 00 00 00 00 00 00 00 6e 65 77 61   ÿ3 .........newa
+0010   63 63 6f 75 6e 74 2d 65 6e 55 53 2e 74 78 74 00   ccount-enUS.txt.
+
+C: SID_GETFILETIME
+0000   ff 33 23 00 03 00 00 00 00 00 00 00 63 68 61 74   ÿ3#.........chat
+0010   68 65 6c 70 2d 77 61 72 33 2d 65 6e 55 53 2e 74   help-war3-enUS.t
+0020   78 74 00                                          xt.
+
+C: SID_GETICONDATA
+0000   ff 2d 04 00                                       ÿ-..
+
+S: SID_GETFILETIME
+0000   ff 33 2c 00 01 00 00 00 00 00 00 00 00 06 d3 5a   ÿ3,...........ÓZ
+0010   62 f3 d3 01 74 65 72 6d 73 6f 66 73 65 72 76 69   bóÓ.termsofservi
+0020   63 65 2d 65 6e 55 53 2e 74 78 74 00               ce-enUS.txt.
+
+S: SID_GETFILETIME
+0000   ff 33 28 00 02 00 00 00 00 00 00 00 00 06 d3 5a   ÿ3(...........ÓZ
+0010   62 f3 d3 01 6e 65 77 61 63 63 6f 75 6e 74 2d 65   bóÓ.newaccount-e
+0020   6e 55 53 2e 74 78 74 00 ff 33 2b 00 03 00 00 00   nUS.txt.ÿ3+.....
+0030   00 00 00 00 00 06 d3 5a 62 f3 d3 01 63 68 61 74   ......ÓZbóÓ.chat
+0040   68 65 6c 70 2d 77 61 72 33 2d 65 6e 55 53 2e 74   help-war3-enUS.t
+0050   78 74 00                                          xt.
+
+S: SID_GETICONDATA
+(FILETIME) Filetime
+(STRING) Filename 
+0000   ff 2d 1b 00 00 06 d3 5a 62 f3 d3 01 69 63 6f 6e   ÿ-....ÓZbóÓ.icon
+0010   73 2d 57 41 52 33 2e 62 6e 69 00                  s-WAR3.bni.
+
+S: KEEPALIVE PONG
+0000   ff 00 04 00                                       ÿ...
+
+C: KEEPALIVE PING
+0000   ff 00 04 00                                       ÿ...
+
+LOGIN:
+C: SID_AUTH_ACCOUNTLOGON
+(UINT8) [32] Client Key ('A')
+(STRING) Username 
+0000   ff 53 29 00 09 db 0e e8 0d 8b 83 f5 ff d5 4a a4   ÿS)..Û.è...õÿÕJ¤
+0010   48 91 af 8d a7 bc bf b1 4d 3b fc af 45 b0 e5 16   H.¯.§¼¿±M;ü¯E°å.
+0020   94 b4 0f 16 52 61 69 64 00                        .´..Raid.
+
+S: SID_AUTH_ACCOUNTLOGON
+(UINT32) Status
+(UINT8) [32] Salt (s)
+(UINT8) [32] Server Key (B)
+0000   ff 53 48 00 00 00 00 00 82 cc e1 cd 26 7e d8 1d   ÿSH......ÌáÍ&~Ø.
+0010   7e f6 40 c7 3b 60 65 0d 58 35 5f 08 8a c4 53 61   ~ö@Ç;`e.X5_..ÄSa
+0020   da 78 14 14 eb 91 cb 00 34 25 cc 06 3f 64 66 77   Úx..ë.Ë.4%Ì.?dfw
+0030   3c 31 3d 04 c5 00 64 7b e4 ad ea 5e be 06 68 9d   <1=.Å.d{ä.ê^¾.h.
+0040   e2 5b bb a1 6a 35 70 48                           â[»¡j5pH
+
+
+C: SID_AUTH_ACCOUNTLOGONPROOF
+(UINT8) [20] Client Password Proof (M1)
+0000   ff 54 18 00 ec 92 12 e9 90 ef 01 91 ff f0 3b 6d   ÿT..ì..é.ï..ÿð;m
+0010   35 6b 61 92 30 47 ed 38                           5ka.0Gí8
+
+S: SID_AUTH_ACCOUNTLOGONPROOF
+(UINT32) Status
+(UINT8) [20] Server Password Proof (M2)
+(STRING) Additional information
+0000   ff 54 1c 00 00 00 00 00 c4 37 94 f6 40 7d 4d c5   ÿT......Ä7.ö@}MÅ
+0010   33 0e 72 ea 02 20 6c 30 c6 0e af 56               3.rê. l0Æ.¯V
+
+C: SID_NETGAMEPORT	
+(UINT16) Port
+0000   ff 45 06 00 e0 17                                 ÿE..à.
+
+C: SID_WARCRAFTGENERAL - WID_MAPLIST 
+(UINT32) Cookie
+(UINT8) Number of types requested
+For each type requested:
+    (UINT32) ID*
+    (UINT32) Checksum*
+0000   ff 44 32 00 02 01 00 00 00 05 4c 52 55 00 1a c9   ÿD2.......LRU..É
+0010   97 f8 50 41 4d 00 a0 1b 18 a7 45 50 59 54 30 59   .øPAM. ..§EPYT0Y
+0020   c3 62 43 53 45 44 95 e0 8b c7 52 44 41 4c be 5b   ÃbCSED.à.ÇRDAL¾[
+0030   27 c8                                             'È
+
+S: SID_WARCRAFTGENERAL - WID_MAPLIST
+(UINT32) Cookie
+(UINT8) Number of responses
+For each response:
+    (UINT32) ID
+    (UINT32) Checksum
+    (UINT16) Decompressed length
+    (UINT16) Compressed length
+    (VOID) Compressed data
+(UINT8) Remaining Packets
+0000   ff 44 0b 00 02 01 00 00 00 00 00                  ÿD.........
+
+C: SID_ENTERCHAT
+NULLSTR - username (not used in wc games)
+NULLSTR - statstring (not used in cdkey products)
+0000   ff 0a 06 00 00 00                                 ÿ.....
+
+C: SID_WARCRAFTGENERAL - WID_ICONLIST
+(UINT32) Cookie
+(UINT32) Selected Icon
+(UINT8) Tiers
+(UINT8) Count
+For each Icon:
+    (UINT32) Icon ID
+    (UINT32) Unit ID**
+    (UINT8) Race
+    (UINT16) Wins required
+    (UINT8) Enabled
+0000   ff 44 09 00 07 01 00 00 00                        ÿD.......
+
+S: SID_ENTERCHAT
+(STRING) Unique name - Raid
+(STRING) Statstring - 0 W3PX
+(STRING) Account name - Raid
+0000   ff 0a 15 00 52 61 69 64 00 50 58 33 57 20 30 00   ÿ...Raid.PX3W 0.
+0010   52 61 69 64 00                                    Raid.
+
+S: SID_WARCRAFTGENERAL - WID_ICONLIST
+(UINT32) Cookie
+(UINT32) Selected Icon
+(UINT8) Tiers
+(UINT8) Count
+For each Icon:
+    (UINT32) Icon ID
+    (UINT32) Unit ID**
+    (UINT8) Race
+    (UINT16) Wins required
+    (UINT8) Enabled
+0000   ff 44 1d 00 07 01 00 00 00 00 00 00 00 00 00 00   ÿD..............
+0010   00 00 00 00 00 00 00 00 00 00 00 00 00            .............
+
+C: SID_NEWS_INFO
+(UINT32) News timestamp
+0000   ff 46 08 00 d0 25 cd 5a                           ÿF..Ð%ÍZ
+
+S: SID_NEWS_INFO
+(UINT8) Number of entries
+(UINT32) Last logon timestamp
+(UINT32) Oldest news timestamp
+(UINT32) Newest news timestamp
+
+For each entry:
+    (UINT32) Timestamp
+    (STRING) News
+0000   ff 46 bd 00 01 00 c1 25 5b 00 d0 1d 3f d0 25 cd   ÿF½...Á%[.Ð.?Ð%Í
+0010   5a 00 00 00 00 54 68 65 72 65 20 61 72 65 20 63   Z....There are c
+0020   75 72 72 65 6e 74 6c 79 20 32 36 38 33 20 75 73   urrently 2683 us
+0030   65 72 73 20 70 6c 61 79 69 6e 67 20 34 32 31 20   ers playing 421 
+0040   67 61 6d 65 73 20 6f 66 20 57 61 72 63 72 61 66   games of Warcraf
+0050   74 20 49 49 49 20 54 68 65 20 46 72 6f 7a 65 6e   t III The Frozen
+0060   20 54 68 72 6f 6e 65 2c 20 61 6e 64 20 31 34 32    Throne, and 142
+0070   30 33 20 75 73 65 72 73 20 70 6c 61 79 69 6e 67   03 users playing
+0080   20 37 32 38 33 20 67 61 6d 65 73 20 6f 6e 20 42    7283 games on B
+0090   61 74 74 6c 65 2e 6e 65 74 2e 0a 4c 61 73 74 20   attle.net..Last 
+00a0   6c 6f 67 6f 6e 3a 20 53 61 74 20 4a 75 6e 20 31   logon: Sat Jun 1
+00b0   36 20 20 31 30 3a 30 31 20 50 4d 0a 00            6  10:01 PM..
+
