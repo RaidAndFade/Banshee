@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 
-namespace WC3_PROTOCOL.utils
+namespace Banshee.utils
 {
     public class ConvertUtils
     {

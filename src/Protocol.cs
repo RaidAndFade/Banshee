@@ -1,8 +1,8 @@
 using System.Linq;
 
-using WC3_PROTOCOL.packets;
+using Banshee.packets;
 
-namespace WC3_PROTOCOL
+namespace Banshee
 {
     public class Protocol
     {

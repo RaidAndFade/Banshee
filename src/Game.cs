@@ -6,16 +6,16 @@ using System.Net;
 using System.IO;
 using System;
 
-using WC3_PROTOCOL.packets;
-using WC3_PROTOCOL.ingame;
+using Banshee.packets;
+using Banshee.ingame;
 
-namespace WC3_PROTOCOL
+namespace Banshee
 {
     public class Game
     {
         GameState State;
 
-        Program p;
+        Banshee p;
 
         Thread lobbyThread;
 
@@ -26,7 +26,7 @@ namespace WC3_PROTOCOL
 
         IPEndPoint broadcastAddr;
 
-        public Game(Program _p){
+        public Game(Banshee _p){
             p = _p;
             entryKey = (uint)new Random().Next();
             State = GameState.LOBBY;

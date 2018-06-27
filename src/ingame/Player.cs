@@ -1,4 +1,4 @@
-namespace WC3_PROTOCOL.ingame
+namespace Banshee.ingame
 {
     public class Player
     {

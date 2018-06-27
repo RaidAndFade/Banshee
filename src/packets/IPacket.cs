@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace WC3_PROTOCOL.packets
+namespace Banshee.packets
 {
     public interface IPacket
     {

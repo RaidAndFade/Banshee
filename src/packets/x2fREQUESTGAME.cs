@@ -4,9 +4,9 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using WC3_PROTOCOL.utils;
+using Banshee.utils;
 
-namespace WC3_PROTOCOL.packets
+namespace Banshee.packets
 {
     public struct x2fREQUESTGAME : IPacket
     {
