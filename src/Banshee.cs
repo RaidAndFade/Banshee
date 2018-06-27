@@ -17,15 +17,16 @@ namespace Banshee
     public class Banshee
     {
 
-        public string wc3folder = "Z:/Misc Games/Warcraft III";
+        public const string WC3PATH = "Z:/Misc Games/Warcraft III";
+        public const string MAPPATH = "Maps/(3)IsleOfDread.w3m";
         public UdpClient udp;
         Thread udpListener;
         Game g;
 
         static void Main(string[] args)
         {
-            new Map("Maps/(3)IsleOfDread.w3m");
-            //new Banshee();
+            //new Map(MAPPATH);
+            new Banshee();
         }
 
         Banshee(){
@@ -45,10 +46,10 @@ namespace Banshee
             if(!Directory.Exists("dep"))
                 Directory.CreateDirectory("dep");
 
-            string patchMpqPath = wc3folder+"/War3x.mpq";
+            string patchMpqPath = WC3PATH+"/War3x.mpq";
 
             if(!File.Exists(patchMpqPath)){
-                patchMpqPath = wc3folder+"/War3Patch.mpq";
+                patchMpqPath = WC3PATH+"/War3Patch.mpq";
             }
 
             using (MpqArchive a = new MpqArchive(patchMpqPath)){
@@ -97,30 +98,30 @@ namespace Banshee
 
         async void onPacket(Object packet, IPEndPoint from){
             try{
-            if(packet is x2fREQUESTGAME){
-                x2fREQUESTGAME p = (x2fREQUESTGAME) packet;
-                if(g.id == p.gameId){
-                    g.sendGameDetails(from);
+                if(packet is x2fREQUESTGAME){
+                    x2fREQUESTGAME p = (x2fREQUESTGAME) packet;
+                    if(g.id == p.gameId){
+                        g.sendGameDetails(from);
+                    }
                 }
-            }
-            
-            if(packet is x31CREATEGAME){
-                x2fREQUESTGAME p = new x2fREQUESTGAME();
-                p.product = "W3XP";
-                p.version = 29;
-                p.gameId = ((x31CREATEGAME)packet).gameId;
-                sendUDPPacket(getPacketBytes(p),from);
-            }
+                
+                if(packet is x31CREATEGAME){
+                    x2fREQUESTGAME p = new x2fREQUESTGAME();
+                    p.product = "W3XP";
+                    p.version = 29;
+                    p.gameId = ((x31CREATEGAME)packet).gameId;
+                    sendUDPPacket(getPacketBytes(p),from);
+                }
 
-            if(packet is x30GAMEDETAILS){
-                x30GAMEDETAILS p = (x30GAMEDETAILS) packet;
-                Console.WriteLine("GAME CREATED IN LAN : ");
-                Console.WriteLine(p.product);
-                Console.WriteLine(p.gameId);
-                Console.WriteLine(p.gameName);
-                Console.WriteLine(p.players + " / " + p.slots); 
+                if(packet is x30GAMEDETAILS){
+                    x30GAMEDETAILS p = (x30GAMEDETAILS) packet;
+                    Console.WriteLine("GAME CREATED IN LAN : ");
+                    Console.WriteLine(p.product);
+                    Console.WriteLine(p.gameId);
+                    Console.WriteLine(p.gameName);
+                    Console.WriteLine(p.players + " / " + p.slots); 
 
-            }
+                }
             }catch(Exception x){
                 System.Console.WriteLine(x);
             }
