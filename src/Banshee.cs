@@ -7,13 +7,17 @@ using System.Linq;
 using System.IO;
 using System.IO.Pipes;
 
-using WC3_PROTOCOL.packets;
+using Foole.Mpq;
 
-namespace WC3_PROTOCOL
+using Banshee.packets;
+
+namespace Banshee
 {
 
-    public class Program
+    public class Banshee
     {
+
+        public string wc3folder = "Z:/Misc Games/Warcraft III";
         public UdpClient udp;
         Thread udpListener;
         Game g;
@@ -21,10 +25,12 @@ namespace WC3_PROTOCOL
         static void Main(string[] args)
         {
             new Map("Maps/(3)IsleOfDread.w3m");
-            //new Program();
+            //new Banshee();
         }
 
-        Program(){
+        Banshee(){
+            GetDependencies();
+
             Protocol.init();
             udp = new UdpClient(6112);
             udp.EnableBroadcast = true;
@@ -35,6 +41,29 @@ namespace WC3_PROTOCOL
             udpListener.Start(); 
         }
 
+        void GetDependencies(){
+            if(!Directory.Exists("dep"))
+                Directory.CreateDirectory("dep");
+
+            string patchMpqPath = wc3folder+"/War3x.mpq";
+
+            if(!File.Exists(patchMpqPath)){
+                patchMpqPath = wc3folder+"/War3Patch.mpq";
+            }
+
+            using (MpqArchive a = new MpqArchive(patchMpqPath)){
+                using(MpqStream s = a.OpenFile("Scripts\\common.j")){
+                    using(FileStream f = File.Create("dep/common.j")){
+                        s.CopyTo(f);
+                    }
+                }
+                using(MpqStream s = a.OpenFile("Scripts\\blizzard.j")){
+                    using(FileStream f = File.Create("dep/blizzard.j")){
+                        s.CopyTo(f);
+                    }
+                }
+            }
+        }
         void listenUDP(){
             while(true){
                 try{
