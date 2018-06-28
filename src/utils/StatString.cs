@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Collections.Generic;
 
 namespace Banshee.utils
@@ -48,15 +50,48 @@ namespace Banshee.utils
     //01-B3-51-4F-6D-61-85-77-63-71-61-9F-4D-2B-D9-B1-49-79-43-3D-9B-A9-A9-65
     //00 51 4e 6c 61 85 76 63 60 9e 4c 2b d9 b1 48 42 3c 9b a9 a9 65
 
-    public struct StatsStringData{
-        int mapflags;
-        short mapwidth;
-        short mapheight;
-        int mapcrc;
-        string mappath;
-        string hostname;
+    public struct StatStringData{
+        public int mapflags;
+        public short mapwidth;
+        public short mapheight;
+        public byte[] mapcrc;
+        public string mappath;
+        public string hostname;
 
-        byte[] random_shit;
+        public byte[] mapsha;
+
+        public static StatStringData FromBytes(byte[] d){
+            if(d.Length < 4+2+2+4+20+2) throw new Exception("Data Mismatch, bytes provided too small");
+
+            BinaryReader br = new BinaryReader(new MemoryStream(d));
+
+            StatStringData s = new StatStringData();
+            s.mapflags = br.ReadInt32();
+            s.mapwidth = br.ReadInt16();
+            s.mapheight = br.ReadInt16();
+            s.mapcrc = br.ReadBytes(4);
+            s.mappath = ConvertUtils.parseStringZ(br);
+            s.hostname = ConvertUtils.parseStringZ(br);
+            s.mapsha = br.ReadBytes(20);
+
+            br.Dispose();
+
+            return s;
+        }
+
+        public static byte[] ToBytes(StatStringData s){
+            List<byte> d = new List<byte>();
+            d.AddRange(BitConverter.GetBytes(s.mapflags));
+            d.Add(0);
+            d.AddRange(BitConverter.GetBytes(s.mapwidth));
+            d.AddRange(BitConverter.GetBytes(s.mapheight));
+            d.AddRange(s.mapcrc);
+            d.AddRange(ConvertUtils.fromStringZ(s.mappath));
+            d.AddRange(ConvertUtils.fromStringZ(s.hostname));
+            d.Add(0);
+            d.AddRange(s.mapsha);
+            return d.ToArray();
+        }
 
     }
 }
