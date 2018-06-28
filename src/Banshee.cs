@@ -36,7 +36,7 @@ namespace Banshee
             udp = new UdpClient(6112);
             udp.EnableBroadcast = true;
 
-            g = new Game(this);
+            g = new Game(this,MAPPATH);
 
             udpListener = new Thread(listenUDP);
             udpListener.Start(); 
@@ -120,7 +120,7 @@ namespace Banshee
                     Console.WriteLine(p.gameId);
                     Console.WriteLine(p.gameName);
                     Console.WriteLine(p.players + " / " + p.slots); 
-
+                    Console.WriteLine(string.Join('-',p.stats));
                 }
             }catch(Exception x){
                 System.Console.WriteLine(x);
