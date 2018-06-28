@@ -8,6 +8,7 @@ using System;
 
 using Banshee.packets;
 using Banshee.ingame;
+using Banshee.utils;
 
 namespace Banshee
 {
@@ -26,10 +27,14 @@ namespace Banshee
 
         IPEndPoint broadcastAddr;
 
-        public Game(Banshee _p){
+        Map gameMap;
+
+        public Game(Banshee _p, string mappath){
             p = _p;
             entryKey = (uint)new Random().Next();
             State = GameState.LOBBY;
+
+            gameMap = new Map(mappath);
 
             broadcastAddr = new IPEndPoint(IPAddress.Broadcast, 6112);
 
@@ -66,14 +71,24 @@ namespace Banshee
             pkt.entryKey = entryKey;
             pkt.gameName = "Big boy club";
             pkt.passwd = "";
-            pkt.stats = new byte[]{2,72,6,0,0,128,0,128,0,79,3,27,204,77,97,112,115,47,40,51,41,73,115,108,101,79,102,68,114,101,97,100,46,119,51,109,0,97,98,99,0,0,81,78,108,97,133,118,99,96,158,76,43,217,177,72,66,60,155,169,169,101};//this might cause issues :^)
+            pkt.stats = GetStatStringData();
             pkt.slots = 24;
             pkt.gameflags = 9;
             pkt.players = 0;
             pkt.freeslots = 24;
             pkt.age = 0;
             pkt.port = 6112;
+            
+            System.Console.WriteLine(string.Join('-',pkt.stats));
             p.sendUDPPacket(pkt,to);
+        }
+
+        public byte[] GetStatStringData(){
+            StatStringData ssd = gameMap.GetStatString();
+
+            ssd.hostname = "abc";
+
+            return StatStringData.ToBytes(ssd);
         }
 
         public byte[] getLanGameDetails(){
