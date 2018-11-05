@@ -28,6 +28,7 @@ namespace Banshee
 
         public int MapSpeed, MapVisibility, MapObservers, MapFlags, MapFilterMaker, MapFilterType, MapFilterSize, MapFilterObservers;
 
+#region initmap (load from mpq)
         public Map(string filename)
         {
             MapPath = filename;
@@ -36,7 +37,8 @@ namespace Banshee
                 fs.Read(d, 0, d.Length);
                 fs.Seek(0,SeekOrigin.Begin);
 
-                MapInfo = new CRC32().ComputeHash(d, 0, d.Length);
+                this.MapSize = BitConverter.GetBytes((int)fs.Length);
+                this.MapInfo = new CRC32().ComputeHash(d, 0, d.Length);
 
                 using (MpqArchive a = new MpqArchive(fs,true))
                 {
@@ -262,7 +264,29 @@ namespace Banshee
             // System.Console.WriteLine(BitConverter.ToString(MapCRC).Replace("-",""));
             // System.Console.WriteLine(BitConverter.ToString(MapSha).Replace("-",""));
         }
+        public uint ROTL(uint i,int c){
+            return (i << c) | (i >> (32 - c));
+        }
+        public uint XORRotateLeft(byte[] d){
+            uint i=0;
+            uint v=0;
+            int l=d.Length;
 
+            if(l>3){
+                while(i<l-3){
+                    v = ROTL(v ^ (((uint)d[i]) + ((uint)d[i+1]<<8) + ((uint)d[i+2]<<16) + ((uint)d[i+3]<<24)), 3);
+                    i+=4;
+                }
+            }
+
+            while(i<l){
+                v = ROTL(v ^ d[i], 3);
+                i++;
+            }
+
+            return v;
+        }
+#endregion
 
         public void LoadGameVariables(){
             MapSpeed = (int)MAPSPEED.FAST;
@@ -316,27 +340,17 @@ namespace Banshee
             s.hostname = "";
             return s;
         }
-        public uint ROTL(uint i,int c){
-            return (i << c) | (i >> (32 - c));
-        }
-        public uint XORRotateLeft(byte[] d){
-            uint i=0;
-            uint v=0;
-            int l=d.Length;
 
-            if(l>3){
-                while(i<l-3){
-                    v = ROTL(v ^ (((uint)d[i]) + ((uint)d[i+1]<<8) + ((uint)d[i+2]<<16) + ((uint)d[i+3]<<24)), 3);
-                    i+=4;
-                }
-            }
+        public byte GetMapLayoutStyle(){
+            // we skip 2 (just fixedplayersettings) because it's not possible without custom forces.
 
-            while(i<l){
-                v = ROTL(v ^ d[i], 3);
-                i++;
-            }
-
-            return v;
+            if( (MapOptions & (int)MAPOPTIONS.CUSTOMFORCES) == 0) //bit not set
+                return 0;
+            
+            if( (MapOptions & (int)MAPOPTIONS.FIXEDPLAYERSETTINGS) == 0) //bit not set
+                return 1;
+            
+            return 3;
         }
     }
 
