@@ -45,7 +45,7 @@ namespace Banshee.packets
             d.AddRange(ConvertUtils.fromStringZ(gameName));
             d.AddRange(ConvertUtils.fromStringZ(passwd));
             d.AddRange(StatString.encode(stats));
-            d.Add(00);
+            d.Add(00); //string padding
             d.AddRange(BitConverter.GetBytes(slots));
             d.AddRange(BitConverter.GetBytes(gameflags));
             d.AddRange(BitConverter.GetBytes(players));

@@ -10,15 +10,15 @@ namespace Banshee.packets
 {
     public class x1eJOINREQUEST : IPacket
     {
-        int gameId;
-        int entryKey;
-        byte unk;
-        short port;
-        int peerkey;
-        string name;
-        int peerdata;
-        short iport;
-        int iip;
+        public int gameId;
+        public int entryKey;
+        public byte unk;
+        public short port;
+        public int peerkey;
+        public string name;
+        public int peerdata;
+        public short iport;
+        public int iip;
 
         public IPacket parse(BinaryReader br){
             x1eJOINREQUEST p = new x1eJOINREQUEST();
