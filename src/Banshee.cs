@@ -7,8 +7,6 @@ using System.Linq;
 using System.IO;
 using System.IO.Pipes;
 
-using Foole.Mpq;
-
 using Banshee.packets;
 
 namespace Banshee
@@ -17,8 +15,9 @@ namespace Banshee
     public class Banshee
     {
 
-        public const string WC3PATH = "Z:/Misc Games/Warcraft III";
-        public const string MAPPATH = "Maps/(3)IsleOfDread.w3m";
+        public const string BOTNAME = "|c00ff0000BNSHE";
+        public const string WC3PATH = "Warcraft III";
+        public const string MAPPATH = "Maps/FrozenThrone/(2)EchoIsles.w3x";
         public UdpClient udp;
         Thread udpListener;
         Game g;
@@ -52,18 +51,18 @@ namespace Banshee
                 patchMpqPath = WC3PATH+"/War3Patch.mpq";
             }
 
-            using (MpqArchive a = new MpqArchive(patchMpqPath)){
-                using(MpqStream s = a.OpenFile("Scripts\\common.j")){
-                    using(FileStream f = File.Create("dep/common.j")){
-                        s.CopyTo(f);
-                    }
-                }
-                using(MpqStream s = a.OpenFile("Scripts\\blizzard.j")){
-                    using(FileStream f = File.Create("dep/blizzard.j")){
-                        s.CopyTo(f);
-                    }
-                }
-            }
+            // using (MpqArchive a = new MpqArchive(patchMpqPath)){
+            //     using(MpqStream s = a.OpenFile("Scripts\\common.j")){
+            //         using(FileStream f = File.Create("dep/common.j")){
+            //             s.CopyTo(f);
+            //         }
+            //     }
+            //     using(MpqStream s = a.OpenFile("Scripts\\blizzard.j")){
+            //         using(FileStream f = File.Create("dep/blizzard.j")){
+            //             s.CopyTo(f);
+            //         }
+            //     }
+            // }
         }
         void listenUDP(){
             while(true){
@@ -71,6 +70,7 @@ namespace Banshee
                     IPEndPoint addr = new IPEndPoint(IPAddress.Broadcast, 6112);
                     var data = udp.Receive(ref addr);
                     
+                    Console.WriteLine(string.Join('-',data));
                     if(data[0] != 0xF7) continue;
                     
                     byte pckId = data[1];
@@ -82,7 +82,7 @@ namespace Banshee
                         continue;
                     }
 
-                    Console.WriteLine("PACKET RECIEVED : " + pckType + "\nSIZE: "+size);
+                    Console.WriteLine("PACKET RECIEVED ("+size+"b): " + pckType);
 
                     data = data.Skip(4).ToArray();
 
@@ -101,19 +101,16 @@ namespace Banshee
                 if(packet is x2fREQUESTGAME){
                     x2fREQUESTGAME p = (x2fREQUESTGAME) packet;
                     if(g.id == p.gameId){
+                        Console.WriteLine("Responding to gameinforequest");
                         g.sendGameDetails(from);
                     }
-                }
-                
-                if(packet is x31CREATEGAME){
+                }else if(packet is x31CREATEGAME){
                     x2fREQUESTGAME p = new x2fREQUESTGAME();
                     p.product = "W3XP";
-                    p.version = 29;
+                    p.version = 30;
                     p.gameId = ((x31CREATEGAME)packet).gameId;
-                    sendUDPPacket(getPacketBytes(p),from);
-                }
-
-                if(packet is x30GAMEDETAILS){
+                    sendUDPPacket(p,from);
+                }else if(packet is x30GAMEDETAILS){
                     x30GAMEDETAILS p = (x30GAMEDETAILS) packet;
                     Console.WriteLine("GAME CREATED IN LAN : ");
                     Console.WriteLine(p.product);
@@ -121,30 +118,18 @@ namespace Banshee
                     Console.WriteLine(p.gameName);
                     Console.WriteLine(p.players + " / " + p.slots); 
                     Console.WriteLine(string.Join('-',p.stats));
+                }else if(packet is x32REFRESHGAME){
+                    //idgaf lol
+                }else{
+                    Console.WriteLine("Unhandled packet " + packet.GetType().Name + " received.");
                 }
             }catch(Exception x){
                 System.Console.WriteLine(x);
             }
         }
 
-        public byte[] getPacketBytes(IPacket o){
-            byte[] data = o.toBytes();
-            int size = data.Length;
-            byte[] arr = new byte[size+4];
-
-            arr[0] = 0xf7;
-            arr[1] = Protocol.packetId(o);
-
-            int pktsize = size+4;            
-            arr[2] = (byte)(pktsize&0xff);
-            arr[3] = (byte)(pktsize>>8);
-
-            Array.Copy(data,0,arr,4,size);
-            return arr;
-        }
-
         public void sendUDPPacket(IPacket p, IPEndPoint to){
-            sendUDPPacket(getPacketBytes(p),to);
+            sendUDPPacket(Protocol.preparePacket(p),to);
         }
         public void sendUDPPacket(byte[] data, IPEndPoint to){
             udp.Send(data,data.Length,to);
