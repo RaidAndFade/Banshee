@@ -1,10 +1,15 @@
+using System;
+using System.IO;
+using System.Text;
+using System.Collections.Generic;
+
 namespace Banshee.ingame
 {
     public class Slot
     {
         public byte pid, downloadStatus, slotStatus, computer, team, color, race, computertype, handicap;
 
-        public Slot(byte p=0, byte dS=255, byte sS=(byte)SlotStatus.OPEN, byte c=1, byte t=0, byte co=0, byte r=(byte)SlotRace.RANDOM,byte cT=(byte)SlotCompType.NORMAL, byte h=100){
+        public Slot(byte p=0, byte dS=255, byte sS=(byte)SlotStatus.OPEN, byte c=0, byte t=0, byte co=0, byte r=(byte)SlotRace.RANDOM,byte cT=(byte)SlotCompType.NORMAL, byte h=100){
             pid = p; downloadStatus = dS; slotStatus = sS; computer = c; team = t; color = co; race = r; computertype = cT; handicap = h;
         }
         public Slot(byte[] d){
@@ -19,6 +24,32 @@ namespace Banshee.ingame
                 computertype = d[7];
             if(d.Length>=9)
                 handicap = d[8];
+        }
+
+        public Slot(BinaryReader br){
+            this.pid = br.ReadByte();
+            this.downloadStatus = br.ReadByte();
+            this.slotStatus = br.ReadByte();
+            this.computer = br.ReadByte();
+            this.team = br.ReadByte();
+            this.color = br.ReadByte();
+            this.race = br.ReadByte();
+            this.computertype = br.ReadByte();
+            this.handicap = br.ReadByte();
+
+        }
+        public byte[] AsBytes(){
+            var d = new List<byte>();
+            d.Add(pid);
+            d.Add(downloadStatus);
+            d.Add(slotStatus);
+            d.Add(computer);
+            d.Add(team);
+            d.Add(color);
+            d.Add(race);
+            d.Add(computertype);
+            d.Add(handicap);
+            return d.ToArray();
         }
 
         public override string ToString(){
