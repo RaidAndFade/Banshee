@@ -5,9 +5,9 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Collections.Generic;
 
-using Banshee.packets;
+using Banshee.Packets;
 
-namespace Banshee.ingame
+namespace Banshee.Ingame
 {
     public class PotentialPlayer{
         public TcpClient socket;
@@ -23,6 +23,18 @@ namespace Banshee.ingame
             socket = _s;
             networkStream = _ns;
             joinReq = jr;
+        }
+
+        public void Close(){
+            networkStream.Flush();
+            try{
+                socket.Client.Disconnect(true);
+                socket.Client.Close(0);
+                socket.Close();
+                socket.Dispose();
+            }catch(Exception e){
+                Console.WriteLine(e);
+            } //idek what can be thrown here but i dont want it :)
         }
 
         public void rejectJoin(int reason){
@@ -41,7 +53,7 @@ namespace Banshee.ingame
         public PotentialPlayer pp;
         public byte pid;
         public string name;
-
+        public bool loaded = false;
         public List<double> pings = new List<double>();
 
         public List<byte> netwritebuff = new List<byte>();
@@ -53,12 +65,22 @@ namespace Banshee.ingame
 
         public Thread networkThread;
 
+        public int syncCounter;
+        public List<int> checksumArr = new List<int>();
+        public int latestChecksum;
+
         public ConnectedPlayer(PotentialPlayer _pp, byte _pid, string _name){
             pp = _pp;
             pid = _pid;
             name = _name;
             networkThread = new Thread(handleReceived);
             networkThread.Start();
+        }
+
+        public void Close(){
+            pp.Close();
+            pp.shouldDelete = true;
+            Console.WriteLine("[*] Client "+pid+" has been removed.");
         }
 
         public void tick(){
@@ -79,35 +101,42 @@ namespace Banshee.ingame
 
 
         public void handleReceived(){
-            while(!pp.shouldDelete && !pp.hasError){
-                if(pp.networkStream.ReadByte()==0xf7){
-                    byte pktid = (byte)pp.networkStream.ReadByte();
-                    short len = (short)(pp.networkStream.ReadByte() + (pp.networkStream.ReadByte()<<8));
-                    byte[] data = new byte[len];
-                    pp.networkStream.Read(data,0,len-4);
-                    IPacket pckType = Protocol.packets[pktid];
-                    if(pckType == null){
-                        Console.WriteLine("UNSUPPORTED PACKET (0x"+pktid.ToString("X")+") RECIEVED");
-                        continue;
-                    }
-                    Console.WriteLine("TCP PACKET RECIEVED ("+len+"b): " + pckType);
-                    if(pckType is x46PONGTOHOST){
-                        using(BinaryReader br = new BinaryReader(new MemoryStream(data))){
-                            onPingPacket(pckType.parse(br));
+            try
+            {
+                while(pp.game.running && !pp.shouldDelete && !pp.hasError){
+                    if(pp.networkStream.ReadByte()==0xf7){
+                        byte pktid = (byte)pp.networkStream.ReadByte();
+                        ushort len = (ushort)(pp.networkStream.ReadByte() + (pp.networkStream.ReadByte()<<8));
+                        byte[] data = new byte[len];
+                        pp.networkStream.Read(data,0,len-4);
+                        IPacket pckType = Protocol.packets[pktid];
+                        if(pckType == null){
+                            Console.WriteLine("UNSUPPORTED PACKET (0x"+pktid.ToString("X")+") RECIEVED");
+                            continue;
                         }
-                        continue;
-                    }
+                        //Console.WriteLine("TCP PACKET RECIEVED ("+len+"b): " + pckType);
+                        if(pckType is x46PONGTOHOST){
+                            using(BinaryReader br = new BinaryReader(new MemoryStream(data))){
+                                onPingPacket(pckType.parse(br, len-4));
+                            }
+                            continue;
+                        }
 
-                    using(BinaryReader br = new BinaryReader(new MemoryStream(data))){
-                        packets.Add(pckType.parse(br));
+                        using(BinaryReader br = new BinaryReader(new MemoryStream(data))){
+                            packets.Add(pckType.parse(br, len-4));
+                        }
+                    }else{
+                        Console.WriteLine("Recieved malformed header, Dropping client");
+                        pp.hasError = true;
+                        break;
                     }
-                }else{
-                    Console.WriteLine("Recieved malformed header, Dropping client");
-                    pp.hasError = true;
-                    break;
                 }
+                pp.hasError = true;
+                Console.WriteLine("Not reading packets anymore, this client is dead");
+            }catch (SocketException){
+                Console.WriteLine("Client "+pid+" disconnected.");
+                pp.hasError = true;
             }
-            Console.WriteLine("Not reading packets anymore, this client is dead");
         }
 
         void onPingPacket(IPacket packet){
@@ -130,7 +159,7 @@ namespace Banshee.ingame
             // Console.WriteLine("Ping of "+pid+" is "+msping+"ms");
 
             pings.Add(msping);
-            while(pings.Count>10){ //shit expensive but should only happen once every second for one iteration so probably fine lol
+            while(pings.Count>10){ //shit expensive but should only happen once every ping for one iteration so probably fine lol
                 pings.RemoveAt(0);
             }
         }
@@ -152,7 +181,21 @@ namespace Banshee.ingame
             }else if(packet is x28CHATTOHOST){
                 var p = (x28CHATTOHOST)packet;
                 pp.game.HandleClientChat(this,p);
-            }else if(packet is x46PONGTOHOST){}
+            }else if(packet is x46PONGTOHOST){
+            }else if(packet is x23OWNGAMELOADED){
+                loaded=true;
+                pp.game.HandleClientGameLoaded(this);
+            }else if(packet is x21PLAYERLEAVEREQ){
+                var p = (x21PLAYERLEAVEREQ)packet;
+                pp.game.HandleClientLeaveRequest(this,p.reason);
+            }else if(packet is x26CLIENTACTION){
+                pp.game.HandleClientAction(this,(x26CLIENTACTION)packet);
+            }else if(packet is x27CLIENTKEEPALIVE){
+                var p = (x27CLIENTKEEPALIVE)packet;
+                syncCounter++;
+                checksumArr.Add(p.checksum);
+                pp.game.HandleClientKeepalive(this);
+            }
         }
 
         public double getPing(){
@@ -162,7 +205,7 @@ namespace Banshee.ingame
         }
 
         public bool isConnected(){
-            return !(pp.socket.Client.Poll(1000, SelectMode.SelectRead) && pp.socket.Available == 0);
+            return true;//!(pp.socket.Client.Poll(0, SelectMode.SelectRead) && pp.socket.Available == 0);
         }
 
         public void queuePacket(IPacket p){
