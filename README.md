@@ -9,6 +9,7 @@ Missing essential features / Solvable Issues:
 - B.NET is not implemented nor supported (it is not entirely planned either tbh, i don't plan on investing on an extra CDKey for this bot)
 - Unhosting on lan does not notify clients that the game is no longer public (UDP PKT 0x33 is not implemented)
 - Client disconnects are not checked, we rely entirely on 0x21 packets, or ping timeouts. This is bad, but it is the working solution until I find a better one.
+- Map Downloading is not supported (this is more likely to happen than b.net though)
 
 Unsolvable Issues:
 - ingame: If there is only one person on your team, the bot cannot see your messages, (TALK TO /ALL INSTEAD)
