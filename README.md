@@ -5,7 +5,7 @@ A Warcraft 3 Game emulator, inspired by GHost++, Made in C#. Pretty Simple
 - HOSTBOT IS PRACTICALLY COMPLETE AND FULLY FUNCTIONAL AS A PURE HOSTBOT
 
 Missing essential features / Solvable Issues:
-- Roles (every usesr has access to every command)
+- Roles (every user has access to every command)
 - B.NET is not implemented nor supported (it is not entirely planned either tbh, i don't plan on investing on an extra CDKey for this bot)
 - Unhosting on lan does not notify clients that the game is no longer public (UDP PKT 0x33 is not implemented)
 - Client disconnects are not checked, we rely entirely on 0x21 packets, or ping timeouts. This is bad, but it is the working solution until I find a better one.
