@@ -4,10 +4,10 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
-using Banshee.ingame;
+using Banshee.Utils;
+using Banshee.Ingame;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x04SLOTINFOJOIN : IPacket
     {
@@ -19,7 +19,7 @@ namespace Banshee.packets
         public uint ip;
         public byte pid;
 
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x04SLOTINFOJOIN p = new x04SLOTINFOJOIN();
             int slotinfolen = br.ReadUInt16();
             int slotcount = br.ReadByte();

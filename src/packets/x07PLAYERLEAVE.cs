@@ -4,15 +4,15 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x07PLAYERLEAVE : IPacket
     {
         public byte pid;
         public uint reason;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x07PLAYERLEAVE p = new x07PLAYERLEAVE();
             p.pid = br.ReadByte();
             p.reason = br.ReadUInt32();

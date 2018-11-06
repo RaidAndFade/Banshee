@@ -4,15 +4,15 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public struct x31CREATEGAME:IPacket
     {
         public string product;
         public uint version, gameId;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x31CREATEGAME p = new x31CREATEGAME();
             p.product = ConvertUtils.parseReverseString(br,4);
             p.version = br.ReadUInt32();

@@ -4,10 +4,10 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
-using Banshee.ingame;
+using Banshee.Utils;
+using Banshee.Ingame;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x09SLOTINFO : IPacket
     {
@@ -16,7 +16,7 @@ namespace Banshee.packets
         public byte layoutStyle;
         public byte playerSlots;
 
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x09SLOTINFO p = new x09SLOTINFO();
             int slotinfolen = br.ReadUInt16();
             int slotcount = br.ReadByte();

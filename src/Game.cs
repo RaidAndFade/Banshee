@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
 using System.IO;
 using System;
 
-using Banshee.packets;
-using Banshee.ingame;
-using Banshee.utils;
+using Banshee.Commands;
+using Banshee.Packets;
+using Banshee.Ingame;
+using Banshee.Utils;
 
 namespace Banshee
 {
@@ -18,7 +20,7 @@ namespace Banshee
     {
 
 #region main init & vardec
-        GameState State;
+        GameState gameState;
 
         Banshee p;
 
@@ -47,19 +49,26 @@ namespace Banshee
         public int ticks = 0;
         public int lastPing = 0;
 
-        public int tickrate = 1000/60; //30tps
+        public int tickrate = 20; //20 ms delay = fast gamemode
 
-        public Game(Banshee _p, string mappath){
+        public short gameSyncCount = 0;
+
+        public bool running=true;
+
+        public List<GameAction> actionList = new List<GameAction>();
+
+        public Game(Banshee _p, string mappath, int port = 6112){
             p = _p;
             entryKey = (uint)new Random().Next();
-            State = GameState.LOBBY;
+            gameState = GameState.LOBBY;
 
             gameMap = new Map(mappath);
             slots = gameMap.Slots.ToArray();
 
             broadcastAddr = new IPEndPoint(IPAddress.Broadcast, 6112);
             tcpServer = new TcpListener(IPAddress.Any, 6112);
-            tcpServer.Start();
+            tcpServer.Server.SetSocketOption(SocketOptionLevel.Socket,SocketOptionName.ReuseAddress,1);
+            tcpServer.Start(); 
 
             x31CREATEGAME pkt = new x31CREATEGAME();
             pkt.product = "W3XP";
@@ -68,7 +77,7 @@ namespace Banshee
             p.sendUDPPacket(pkt,broadcastAddr);
 
             lobbyThread = new Thread(refreshThread);
-            lobbyThread.Start();        
+            lobbyThread.Start();
 
             tcpThread = new Thread(listenTCP);
             tcpThread.Start();
@@ -77,35 +86,44 @@ namespace Banshee
             gameThread.Start();
         }
 
-        ~Game(){
+        public void Close(){
             Console.WriteLine("[x] Closing GameServer");
-            tcpServer.Stop();
-            tcpServer.Server.Close();
-            gameThread.Abort();
-            tcpThread.Abort();
-            lobbyThread.Abort();
             foreach (var p in players)
             {
                 p.flushSocket(); //get that last pp out
-                p.pp.socket.Close();
+                p.Close();
             }
             foreach(var p in potentialPlayers)
             {
-                p.socket.Close();
+                if(p.isConnected) continue; //if they're connected, they've already been closed in the last loop.
+                p.Close();
             }
+            Console.WriteLine("[x] Killed all clients");
+            running=false;
+            try{
+                tcpThread.Interrupt();
+                tcpThread.Abort();
+            }catch(Exception){}
+            Console.WriteLine("[x] Killed all threads");
+            tcpServer.Server.Disconnect(true);
+            tcpServer.Stop();
+            Console.WriteLine("[x] Stopped TCP Server");
+            tcpServer.Server.Close(0);
+            tcpServer.Server.Dispose();
+            Console.WriteLine("[x] Killed TCP Server");
             Console.WriteLine("[x] Closed GameServer");
         }
 #endregion
 
 #region tcp new
-        public void listenTCP(){
-            while(true){
+        public async void listenTCP(){
+            while(running){
                 try{
-                    TcpClient c = tcpServer.AcceptTcpClient();
+                    Task<TcpClient> c = tcpServer.AcceptTcpClientAsync();
 
-                    handleNewClient(c);
+                    handleNewClient(await c);
                 }catch(Exception e){
-                    System.Console.WriteLine(e);
+                    if(!running) System.Console.WriteLine("[*] TcpThread Closed Gracefully");
                 }
             }
         }
@@ -119,8 +137,9 @@ namespace Banshee
                 return;
             }
 
+
             using(BinaryReader br = new BinaryReader(new MemoryStream(buf.Skip(4).ToArray()))){
-                x1eJOINREQUEST jr = (x1eJOINREQUEST)(new x1eJOINREQUEST().parse(br));
+                x1eJOINREQUEST jr = (x1eJOINREQUEST)(new x1eJOINREQUEST().parse(br, 0)); //We can send len=0 here because the packet's parse function does not use the len.
                 PotentialPlayer pp = new PotentialPlayer(this,c,ns,jr);
                 if(isValidJr(jr)){
                     this.potentialPlayers.Add(pp);
@@ -145,21 +164,32 @@ namespace Banshee
 
 #region tick
         public void tickloop(){
-            while(true){
+            while(running){
                 ticks++;
                 tick();
                 tickAfter();
-                Thread.Sleep((int)(300));
+                if(gameState == GameState.LOBBY || gameState == GameState.LOADING) //we dont need to try that hard while in lobby. nothing is going to happen lol
+                    Thread.Sleep((int)(300));
+                else
+                    Thread.Sleep((int)tickrate);
             }
         }
 
         public void tick(){
+            if(gameState == GameState.INGAME && players.Count == 0 ){
+                Close();
+            }
+
             foreach (var pp in this.potentialPlayers)
             {   
                 if(pp.shouldDelete || pp.hasError || !pp.socket.Connected){
                     continue;
                 }
                 if(!pp.isConnected){ //new player, handle them.
+                    if(gameState != GameState.LOBBY){
+                        pp.rejectJoin((int)REJECTJOIN.STARTED);
+                        pp.shouldDelete = true;
+                    }
                     pp.isConnected = true;
                     
                     if(players.Count+1 >= gameMap.MapNumPlayers){
@@ -220,13 +250,17 @@ namespace Banshee
                         otherplayer.queuePacket(plinfo);
                     }
 
+                    //quickly throw a ping at em to get shit rollin.
+                    
+                    //PING Algorithm explained in Player.cs->OnPingPacket();
                     x01PINGFROMHOST pingpkt = new x01PINGFROMHOST();
-                    pingpkt.nonce = (int)(GetTimeMS()%1000000); //this is hacky, its described better in the Player ping receive handler
-                    pl.queuePacket(pingpkt); //send the first ping packet along with the other shit. if this works we've successfully meme'd GHost++
+                    pingpkt.nonce = (int)(GetTimeMS()%1000000); 
+                    pl.queuePacket(pingpkt);
                 }
             }
 
-            if( /*gameState == LOBBY && */ fakeHostPID == 255 && players.Count < gameMap.MapNumPlayers )
+            //TODO fakehost is lobby only
+            if( gameState == GameState.LOBBY &&  fakeHostPID == 255 && players.Count < gameMap.MapNumPlayers )
                 CreateFakeHost();
 
 
@@ -248,7 +282,8 @@ namespace Banshee
                 }
             }
 
-            if(needToUpdateSlots){
+            if(needToUpdateSlots && gameState == GameState.LOBBY){
+                //TODO(LATER)
                 //implement mechanism so that download % is only constantly updated on the person downloading, and once per second on everyone else.
                 // in theory could be simple as long as i make another flag "slotDLStatusUpdate" and set it to true if there's a download change
                 needToUpdateSlots = false;
@@ -257,8 +292,12 @@ namespace Banshee
                 sinfo.slots = slots;
                 sinfo.playerSlots = (byte)gameMap.MapNumPlayers;
                 sinfo.layoutStyle = gameMap.GetMapLayoutStyle();
-                sinfo.randomseed = 0xdeadbeef;
+                sinfo.randomseed = 0xefbeadde;
                 SendAll(sinfo);
+            }
+
+            if(gameState == GameState.INGAME){
+                ProcessGameActions();
             }
         }
 
@@ -269,17 +308,57 @@ namespace Banshee
                 pingpkt.nonce = (int)(GetTimeMS()%1000000); //hacky, explained in player
                 SendAll(pingpkt);
             } 
-            //every 5 seconds send a ping (make this 1-2 seconds if ingame)
+            //every 5 seconds send a ping (TODO make this 1-2 seconds if ingame)
 
             foreach (var p in this.players)
             {   
                 if(p.pp.shouldDelete || p.pp.hasError || !p.pp.socket.Connected) continue;
                 if(p.netwritebuff.Count==0) continue;
-                Console.WriteLine("Flushing "+p.pid);
+                //Console.WriteLine("Flushing "+p.pid);
                 p.flushSocket();
             }
         }
 #endregion
+
+        public void ProcessGameActions(){
+            gameSyncCount++;
+
+            if(actionList.Count == 0){
+                x0cACTIONBROADCAST nullab = new x0cACTIONBROADCAST();
+                nullab.actions = new GameAction[0];
+                nullab.sendInterval = (short)tickrate; //meme?
+                SendAll(nullab);
+                return;
+            }
+            
+            List<GameAction> subactions = new List<GameAction>();
+            int subactionlen = 0;
+
+            GameAction ac = actionList.First();
+            actionList.RemoveAt(0);
+            subactions.Add(ac);
+            subactionlen += ac.GetLength();
+
+            while(actionList.Count > 0){
+                ac = actionList.First();
+                actionList.RemoveAt(0);
+                if(subactionlen + ac.GetLength() > 1452){ //1460-8(header)
+                    x48EXTRAACTIONBROADCAST eab = new x48EXTRAACTIONBROADCAST();
+                    eab.actions = subactions.ToList();
+                    SendAll(eab);
+                    subactions.Clear();
+                    subactionlen = 0;
+                }
+                subactions.Add(ac);
+                subactionlen += ac.GetLength();
+            }
+            x0cACTIONBROADCAST ab = new x0cACTIONBROADCAST();
+            ab.actions = subactions.ToArray();
+            ab.sendInterval = (short)tickrate; //meme?
+            SendAll(ab);
+
+            subactions.Clear();
+        }
 
 #region PID and SID functions
         public byte GetNextPID(){
@@ -346,7 +425,7 @@ namespace Banshee
 
             foreach (var p in players)
             {
-                return p.pid;//meme
+                return p.pid;
             }
 
             return 255;
@@ -365,11 +444,7 @@ namespace Banshee
             if(fakeHostPID != 255) return;
 
             fakeHostPID = GetNextPID();
-            var fakeHostIp = new byte[]{0,0,0,0};
-            x06PLAYERINFO fhip = new x06PLAYERINFO();
-            fhip.pid = fakeHostPID;
-            fhip.name = Banshee.BOTNAME;
-            fhip.externalIp = fhip.internalIp = fakeHostIp;
+            x06PLAYERINFO fhip = GetPlayerInfo(fakeHostPID);
             SendAll(fhip);
         }
 
@@ -415,11 +490,122 @@ namespace Banshee
                 }
             }
         }
+        
+        public void SendAllExcept(byte except, IPacket pkt){
+            foreach(var p in players){
+                if(p.pp.shouldDelete || p.pp.hasError) continue;
+                if(p.pid == except) continue;
+                p.queuePacket(pkt);
+            }
+        }
 
         public void SendAll(IPacket pkt){
             foreach(var p in players){
-                if(p.pp.shouldDelete || p.pp.hasError || !p.pp.socket.Connected) continue;
+                if(p.pp.shouldDelete || p.pp.hasError) continue;
                 p.queuePacket(pkt);
+            }
+        }
+
+        public void HandleClientLeaveRequest(ConnectedPlayer p, uint reason){
+            RemovePlayer(p,reason);
+        } 
+
+        public void HandleClientKeepalive(ConnectedPlayer p){
+            foreach(var pl in players){
+                if(pl.pp.shouldDelete || pl.pp.hasError) continue;
+                if(pl.checksumArr.Count==0) return;
+            }
+
+            var checksumPools = new Dictionary<int, int>(); //checksum -> number of players in that checsum
+            foreach(var pl in players){
+                var latest = pl.checksumArr.First();
+                //Console.WriteLine("Player "+pl.pid + "(S:"+pl.syncCounter+") claims the current checksum is "+pl.latestChecksum);
+                if(checksumPools.ContainsKey(latest)){
+                    checksumPools[latest]++;
+                }else{
+                    checksumPools.Add(latest,1);
+                }
+            }
+
+
+            if(checksumPools.Count > 1){ //a desync exists. this is no good
+                //basically, if there is more than 80% agreement that a certain checksum is wrong, only the person(s) that are wrong will be kicked
+                //otherwise, everyone is kicked.
+
+                //first we group the good and bad players together. good = part of the largest Checksum, bad = not good.
+                List<int> badPools = new List<int>();
+                int badplayers = 0;
+                
+                var largestPool = checksumPools.Keys.First();
+                var largestPoolPlayerCount = checksumPools[largestPool];
+                foreach (KeyValuePair<int,int> k in checksumPools){
+                    if(largestPoolPlayerCount < k.Value){
+                        //here we add the current pool (with less users) to the bad pile.
+                        badPools.Add(largestPool); 
+                        badplayers += largestPoolPlayerCount;
+                        largestPool = k.Key;
+                        largestPoolPlayerCount = k.Value;
+                    }else if(largestPoolPlayerCount == k.Value){
+                        //both pools are bad since neither side agrees and they contain the same number of players.
+                        badPools.Add(largestPool); 
+                        badplayers += largestPoolPlayerCount;
+                        badPools.Add(k.Key); 
+                        badplayers += k.Value;
+
+                        //set the largest pool to nothing with 0 players, in case more pools exist
+                        largestPool = 0;
+                        largestPoolPlayerCount = 0;
+                    }
+                }
+
+                if(badPools.Count == 0){
+                    return;
+                }
+
+                //Next, we check to see if the number of players in the largest pool are at least 80% of the total playercount
+                if(largestPoolPlayerCount/players.Count() > 0.8){
+                    Console.WriteLine("Bad checksum group found. Agreement found. Kicking bads");
+                    //Kick everyone not in good group, they are desynced.
+                    foreach (var pl in players)
+                    {
+                        if(pl.checksumArr.First() != largestPool){}
+                            //RemovePlayer(pl,(uint)PLAYERLEAVEREASON.DRAW);
+                    }
+                }else{
+                    Console.WriteLine("Bad checksum group found but no agreeance. Kicking all.");
+                    //kick everyone, game is over. nobody won.
+                    foreach(var pl in players){
+                       // RemovePlayer(pl,(uint)PLAYERLEAVEREASON.DRAW);
+                    }
+                    //EndGame();
+                }
+
+                foreach (var pl in players)
+                {
+                    if(pl.pp.shouldDelete || pl.pp.hasError) continue;
+                    pl.checksumArr.RemoveAt(0);
+                }
+            }
+        }
+        public void HandleClientAction(ConnectedPlayer p, x26CLIENTACTION pkt){
+            //if this is received in lobby. kick player because they are fried.
+            //if this packet is longer than 1027, something is seriously wrong with player, kick player with LOST reason
+            actionList.Add(new GameAction(p.pid, pkt.crc, pkt.action));
+        }   
+        public void HandleClientGameLoaded(ConnectedPlayer p){
+            x08OTHERGAMELOADED glpkt = new x08OTHERGAMELOADED();
+            glpkt.pid = p.pid;
+            SendAll(glpkt);
+            bool finishedLoading = true;
+            foreach(var pl in players){
+                if(!pl.loaded){
+                    finishedLoading = false;
+                    break;
+                }
+            }
+            if(finishedLoading){
+                gameSyncCount = 0;
+                gameState = GameState.INGAME;
             }
         }
 
@@ -438,9 +624,10 @@ namespace Banshee
                         return;
 
                     if(extra[0] == 0){ //ingame message to ALL
+                        Console.WriteLine("[ALL] " + p.name + ": " + msg);
 
                     }else if(extra[0] == 2){ //ingame message to OBSERVERS
-
+                        Console.WriteLine("[OBS] " + p.name + ": " + msg);
                     }
                 }
 
@@ -454,41 +641,74 @@ namespace Banshee
                     SendTo(cc.toPIDs,cfh);
                 }
             }
-            // if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGECOLOR) HandleClientColorChangeRequest(p,(byte)cc.args);
-            // if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGETEAM) HandleClientTeamChangeRequest(p,(byte)cc.args);
-            // if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGERACE) HandleClientRaceChangeRequest(p,(byte)cc.args);
-            // if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGEHANDICAP) HandleClientHandicapChangeRequest(p,(byte)cc.args);
+
+            if(gameState != GameState.LOBBY) return; //the rest can only happen in lobby.
+
+            if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGECOLOR) HandleClientColorChange(p,(byte)cc.args);
+            if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGETEAM) HandleClientTeamChange(p,(byte)cc.args);
+            if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGERACE) HandleClientRaceChange(p,(byte)cc.args);
+            if(cc.command == (byte)CHATTOHOSTCOMMANDS.CHANGEHANDICAP) HandleClientHandicapChange(p,(byte)cc.args);
 
         }
 
+        public void HandleClientColorChange(ConnectedPlayer player, byte color){
+            Slot slot = GetSlot(player);
+            foreach (var s in slots)
+            {
+                if(color == s.color){
+                    if(s.slotStatus == (byte)SlotStatus.OCCUPIED){
+                        return;
+                    }else{
+                        s.color = slot.color; //swap the colors
+                    }
+                }
+            }
+            slot.color = color;
+            UpdateSlots();
+        }
+
+        public void HandleClientTeamChange(ConnectedPlayer player, byte team){
+            Slot slot = GetSlot(player);
+            slot.team = team;
+            UpdateSlots();
+        }
+        public void HandleClientRaceChange(ConnectedPlayer player, byte race){
+            Slot slot = GetSlot(player);
+            slot.race = race;
+            UpdateSlots();
+        }
+
+        public void HandleClientHandicapChange(ConnectedPlayer player, byte handicap){
+            Slot slot = GetSlot(player);
+            slot.handicap = handicap;
+            UpdateSlots();
+        }
+
+        //TODO make an actual command handler class (and package possibly) with actual wrappers and handlers. rather than just a bunch of if statements.
         public bool HandleClientCommand(ConnectedPlayer p, string msg){
-            msg = msg.Substring(1);
-            Console.WriteLine("[*] Incoming Command : !"+msg);
-            if(msg.Length>=5 && msg.Substring(0,5) == "echo "){
-                HostSendChat(msg.Substring(5), new byte[]{p.pid});
-                return true;
-            }
-            if(msg.Length>=4 && msg.Substring(0,4) == "ping"){
-                var cping = p.getPing();
-                if(cping == -1)
-                    HostSendChat("There is no reliable ping for you yet.", new byte[]{p.pid});
-                else
-                    HostSendChat("Your ping is "+Math.Round(cping,2)+"ms.", new byte[]{p.pid});
+            Commands.HandleCommand(this,p,msg);
+        }
 
-                return true;
-            }
-
-            return false;
+        public void StartGame(){
+            SendAll(new x0aCOUNTDOWNSTART());
+            gameState = GameState.LOADING;
+            RemoveFakeHost(); //remove fake vhost, not necessary anymore.
+            SendAll(new x0bCOUNTDOWNEND());
         }
 
         public void HostSendChat(string msg, byte[] toPIDs){
             //if ingame... send extramessage with extra[0]==0
             x0fCHATFROMHOST cfh = new x0fCHATFROMHOST();
-            cfh.command = (byte)CHATTOHOSTCOMMANDS.MESSAGE;
+            if(gameState == GameState.LOBBY){
+                cfh.command = (byte)CHATTOHOSTCOMMANDS.MESSAGE;
+                cfh.extra = null;
+            }else if(gameState == GameState.INGAME){
+                cfh.command = (byte)CHATTOHOSTCOMMANDS.MESSAGEEXTRA;
+                cfh.extra = new byte[]{0,0,0,0};
+            }
             cfh.fromPID = GetHostPid();
             cfh.toPIDs = toPIDs;
             cfh.args = msg;
-            cfh.extra = null;
             SendTo(toPIDs, cfh);
         }
 #endregion
@@ -529,8 +749,9 @@ namespace Banshee
 
 #region udp lan
         public void refreshThread(){
-            while(State == GameState.LOBBY){
+            while(true){
                 Thread.Sleep(5000);
+                if(!running || gameState != GameState.LOBBY) break;
                 sendRefreshBroadcast();
             }
         }
@@ -588,6 +809,7 @@ namespace Banshee
 
     public enum GameState{
         LOBBY = 0x00,
-        INGAME = 0x01
+        LOADING = 0x01,
+        INGAME = 0x02
     }
 }

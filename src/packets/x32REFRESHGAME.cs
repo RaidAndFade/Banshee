@@ -4,14 +4,14 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x32REFRESHGAME:IPacket
     {
         public uint gameid,numplayers,slots;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x32REFRESHGAME p = new x32REFRESHGAME();
             p.gameid = br.ReadUInt32();
             p.numplayers = br.ReadUInt32();

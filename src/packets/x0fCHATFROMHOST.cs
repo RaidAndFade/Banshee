@@ -4,10 +4,10 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
-using Banshee.ingame;
+using Banshee.Utils;
+using Banshee.Ingame;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x0fCHATFROMHOST : IPacket
     {
@@ -17,7 +17,7 @@ namespace Banshee.packets
         public Object args;
         public Object extra;
 
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x0fCHATFROMHOST p = new x0fCHATFROMHOST();
             byte recipientCount = br.ReadByte();
             p.toPIDs = new byte[recipientCount];

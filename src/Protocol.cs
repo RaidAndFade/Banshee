@@ -1,7 +1,7 @@
 using System.Linq;
 using System;
 
-using Banshee.packets;
+using Banshee.Packets;
 
 namespace Banshee
 {
@@ -36,16 +36,25 @@ namespace Banshee
             packets[0x05] = new x05REJECTJOIN(); 
             packets[0x06] = new x06PLAYERINFO(); 
             packets[0x07] = new x07PLAYERLEAVE(); 
+            packets[0x08] = new x08OTHERGAMELOADED(); 
             packets[0x09] = new x09SLOTINFO(); 
+            packets[0x0A] = new x0aCOUNTDOWNSTART(); 
+            packets[0x0B] = new x0bCOUNTDOWNEND(); 
+            packets[0x0c] = new x0cACTIONBROADCAST(); 
             packets[0x0F] = new x0fCHATFROMHOST(); 
 
             packets[0x1E] = new x1eJOINREQUEST(); 
             
+            packets[0x21] = new x21PLAYERLEAVEREQ(); 
+            packets[0x23] = new x23OWNGAMELOADED(); 
+            packets[0x26] = new x26CLIENTACTION(); 
+            packets[0x27] = new x27CLIENTKEEPALIVE(); 
             packets[0x28] = new x28CHATTOHOST(); 
             packets[0x3d] = new x3dMAPCHECK(); 
 
             packets[0x42] = new x42MAPSIZEVERIFY(); 
             packets[0x46] = new x46PONGTOHOST(); 
+            packets[0x48] = new x48EXTRAACTIONBROADCAST(); 
         }
         public static void initUDP(){            
             packets[0x2F] = new x2fREQUESTGAME(); 

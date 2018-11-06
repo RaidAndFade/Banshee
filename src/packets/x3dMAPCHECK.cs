@@ -4,16 +4,16 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public struct x3dMAPCHECK : IPacket
     {
         public string mapPath;
 
         public byte[] mapSize, mapInfo, mapCRC, mapSHA1;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x3dMAPCHECK p = new x3dMAPCHECK();
             var unk = br.ReadBytes(4); //1 0 0 0
             p.mapPath = ConvertUtils.parseStringZ(br);

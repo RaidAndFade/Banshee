@@ -4,14 +4,14 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x05REJECTJOIN : IPacket
     {
         public int reason;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x05REJECTJOIN p = new x05REJECTJOIN();
             p.reason = br.ReadInt32();
             return p;

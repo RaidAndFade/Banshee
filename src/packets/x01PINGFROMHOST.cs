@@ -4,14 +4,14 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x01PINGFROMHOST : IPacket
     {
         public int nonce;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x01PINGFROMHOST p = new x01PINGFROMHOST();
             p.nonce = br.ReadInt32();
             return p;

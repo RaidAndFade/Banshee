@@ -4,16 +4,16 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x06PLAYERINFO : IPacket
     {
         public byte pid;
         public string name;
         public byte[] internalIp, externalIp;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x06PLAYERINFO p = new x06PLAYERINFO();
             br.ReadInt32(); //unk1
             p.pid = br.ReadByte();

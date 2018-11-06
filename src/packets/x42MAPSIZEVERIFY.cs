@@ -4,15 +4,15 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public struct x42MAPSIZEVERIFY : IPacket
     {
         public byte[] mapSize;
         public byte sizeFlag;
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x42MAPSIZEVERIFY p = new x42MAPSIZEVERIFY();
             var unk = br.ReadBytes(4); //1 0 0 0
             p.sizeFlag = br.ReadByte();

@@ -4,9 +4,9 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x30GAMEDETAILS:IPacket
     {
@@ -18,7 +18,7 @@ namespace Banshee.packets
         public uint slots,gameflags,players,freeslots,age; 
         public ushort port; 
 
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x30GAMEDETAILS p = new x30GAMEDETAILS();
             p.product = ConvertUtils.parseReverseString(br,4);
             p.gameVersion = br.ReadUInt32();

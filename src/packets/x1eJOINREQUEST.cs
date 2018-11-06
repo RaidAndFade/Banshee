@@ -4,9 +4,9 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-using Banshee.utils;
+using Banshee.Utils;
 
-namespace Banshee.packets
+namespace Banshee.Packets
 {
     public class x1eJOINREQUEST : IPacket
     {
@@ -20,7 +20,7 @@ namespace Banshee.packets
         public short iport;
         public int iip;
 
-        public IPacket parse(BinaryReader br){
+        public IPacket parse(BinaryReader br, int len){
             x1eJOINREQUEST p = new x1eJOINREQUEST();
             p.gameId = br.ReadInt32();
             p.entryKey = br.ReadInt32();

@@ -8,18 +8,15 @@ using Banshee.Utils;
 
 namespace Banshee.Packets
 {
-    public class x46PONGTOHOST : IPacket
+    public class x0bCOUNTDOWNEND : IPacket
     {
-        public int nonce;
         public IPacket parse(BinaryReader br, int len){
-            x46PONGTOHOST p = new x46PONGTOHOST();
-            p.nonce = br.ReadInt32();
+            x0bCOUNTDOWNEND p = new x0bCOUNTDOWNEND();
             return p;
         }
 
         public byte[] toBytes(){
             var d = new List<byte>();
-            d.AddRange(BitConverter.GetBytes(nonce));
             return d.ToArray();
         }
     }
