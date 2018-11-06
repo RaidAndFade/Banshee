@@ -7,7 +7,7 @@ using System.Linq;
 using System.IO;
 using System.IO.Pipes;
 
-using Banshee.packets;
+using Banshee.Packets;
 
 namespace Banshee
 {
@@ -25,7 +25,7 @@ namespace Banshee
         static void Main(string[] args)
         {
             //new Map(MAPPATH);
-            new Banshee();
+            Banshee b = new Banshee();
         }
 
         Banshee(){
@@ -39,6 +39,22 @@ namespace Banshee
 
             udpListener = new Thread(listenUDP);
             udpListener.Start(); 
+
+            AppDomain.CurrentDomain.DomainUnload += Close;
+            AppDomain.CurrentDomain.ProcessExit += Close;
+            Console.CancelKeyPress += Close;
+        }
+
+        bool isClosed = false;
+        void Close(object s, EventArgs a){
+            if(isClosed) return;
+            isClosed = true;
+            Console.WriteLine("[x] Closing all sockets and handlers...");
+            g.Close();
+            udp.Client.Close();
+            udp.Client.Dispose();
+            udp.Close();
+            Console.WriteLine("[x] Graceful shutdown.");
         }
 
         void GetDependencies(){
@@ -64,11 +80,14 @@ namespace Banshee
             //     }
             // }
         }
-        void listenUDP(){
-            while(true){
+        async void listenUDP(){
+            while(!isClosed){
                 try{
-                    IPEndPoint addr = new IPEndPoint(IPAddress.Broadcast, 6112);
-                    var data = udp.Receive(ref addr);
+                    var recv = udp.ReceiveAsync();
+
+                    var res = (await recv);
+                    var addr = res.RemoteEndPoint;
+                    var data = res.Buffer;
                     
                     Console.WriteLine(string.Join('-',data));
                     if(data[0] != 0xF7) continue;
@@ -87,7 +106,7 @@ namespace Banshee
                     data = data.Skip(4).ToArray();
 
                     using(BinaryReader br = new BinaryReader(new MemoryStream(data))){
-                        onPacket(pckType.parse(br), addr);
+                        onPacket(pckType.parse(br, size-4), addr);
                     }
                 }catch(Exception e){
                     System.Console.WriteLine(e);
