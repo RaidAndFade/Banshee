@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Pipes;
 
 using Banshee.Packets;
+using Banshee.Commands;
 
 namespace Banshee
 {
@@ -17,7 +18,7 @@ namespace Banshee
 
         public const string BOTNAME = "|c00ff0000BNSHE";
         public const string WC3PATH = "Warcraft III";
-        public const string MAPPATH = "Maps/FrozenThrone/(2)EchoIsles.w3x";
+        public const string MAPPATH = "Maps/FrozenThrone/(6)CopperCanyon.w3x";
         public UdpClient udp;
         Thread udpListener;
         Game g;
@@ -26,6 +27,7 @@ namespace Banshee
         {
             //new Map(MAPPATH);
             Banshee b = new Banshee();
+            CommandHandler.InitCommands();
         }
 
         Banshee(){

@@ -9,10 +9,10 @@ using System.Net;
 using System.IO;
 using System;
 
-using Banshee.Commands;
 using Banshee.Packets;
 using Banshee.Ingame;
 using Banshee.Utils;
+using Banshee.Commands;
 
 namespace Banshee
 {
@@ -45,6 +45,7 @@ namespace Banshee
         int lastSlotUpdate = 0;
 
         byte fakeHostPID = 255;
+        bool isfakehostingame = false;
 
         public int ticks = 0;
         public int lastPing = 0;
@@ -55,6 +56,8 @@ namespace Banshee
 
         public bool running=true;
 
+        public uint randomseed;
+
         public List<GameAction> actionList = new List<GameAction>();
 
         public Game(Banshee _p, string mappath, int port = 6112){
@@ -64,6 +67,8 @@ namespace Banshee
 
             gameMap = new Map(mappath);
             slots = gameMap.Slots.ToArray();
+
+            randomseed = (uint)GetTimeMS();
 
             broadcastAddr = new IPEndPoint(IPAddress.Broadcast, 6112);
             tcpServer = new TcpListener(IPAddress.Any, 6112);
@@ -87,6 +92,7 @@ namespace Banshee
         }
 
         public void Close(){
+            if(!running) return;
             Console.WriteLine("[x] Closing GameServer");
             foreach (var p in players)
             {
@@ -205,9 +211,10 @@ namespace Banshee
                         return;
                     }
 
+                    slots[sid].computer = 0;
+                    slots[sid].color = GetUnusedColor();
                     slots[sid].pid = pid;
                     slots[sid].slotStatus = (byte)SlotStatus.OCCUPIED;
-                    slots[sid].computer = 0;
                     UpdateSlots();
 
                     var pl = new ConnectedPlayer(pp,pid,pp.joinReq.name);
@@ -221,7 +228,7 @@ namespace Banshee
                     p.pid = pid;
                     p.playerSlots = (byte)gameMap.MapNumPlayers;
                     p.layoutStyle = gameMap.GetMapLayoutStyle();
-                    p.randomseed = 0xefbeadde; //random, lol.
+                    p.randomseed = randomseed; //This handles what race you spawn as
                     pp.player = pl;
                     pl.queuePacket(p);
 
@@ -288,11 +295,12 @@ namespace Banshee
                 // in theory could be simple as long as i make another flag "slotDLStatusUpdate" and set it to true if there's a download change
                 needToUpdateSlots = false;
                 Console.WriteLine("Sending updated slot info as requested");
+                CleanSlots(); //make sure they are following the rules
                 x09SLOTINFO sinfo = new x09SLOTINFO();
                 sinfo.slots = slots;
                 sinfo.playerSlots = (byte)gameMap.MapNumPlayers;
                 sinfo.layoutStyle = gameMap.GetMapLayoutStyle();
-                sinfo.randomseed = 0xefbeadde;
+                sinfo.randomseed = randomseed;
                 SendAll(sinfo);
             }
 
@@ -383,6 +391,22 @@ namespace Banshee
             return 0xff;
         }
 
+        public byte GetUnusedColor(){
+            for(byte x=0;x<24;x++){
+                bool isUsed = false;
+                foreach(var slot in slots){
+                    if(slot.slotStatus == (byte)SlotStatus.OCCUPIED && slot.color == x){
+                        isUsed=true;
+                        break;
+                    } 
+                }
+                if(!isUsed){
+                    return x;
+                }
+            }
+            return 255; //this should never happen
+        }
+
         public byte GetOpenSlotID(){
             for (byte i = 0; i < slots.Length; i++){
                 if(slots[i].slotStatus == (byte)SlotStatus.OPEN){
@@ -421,7 +445,8 @@ namespace Banshee
         }
 
         public byte GetHostPid(){
-            if(fakeHostPID != 255) return fakeHostPID;
+             //ingame we always want the fakehost to be as invisible as possible. If it does **anything**, the client will crash.
+            if(gameState == GameState.LOBBY && fakeHostPID != 255) return fakeHostPID;
 
             foreach (var p in players)
             {
@@ -453,7 +478,7 @@ namespace Banshee
 
             x07PLAYERLEAVE fhlp = new x07PLAYERLEAVE();
             fhlp.pid = fakeHostPID;
-            fhlp.reason = (int)PLAYERLEAVEREASON.LOBBY;
+            fhlp.reason = (int)PLAYERLEAVEREASON.LOST;
             fakeHostPID = 255;
             SendAll(fhlp);
         }
@@ -511,13 +536,11 @@ namespace Banshee
         } 
 
         public void HandleClientKeepalive(ConnectedPlayer p){
-            foreach(var pl in players){
-                if(pl.pp.shouldDelete || pl.pp.hasError) continue;
-                if(pl.checksumArr.Count==0) return;
-            }
 
             var checksumPools = new Dictionary<int, int>(); //checksum -> number of players in that checsum
             foreach(var pl in players){
+                if(pl.pp.shouldDelete || pl.pp.hasError) continue;
+                if(pl.checksumArr.Count==0) return;
                 var latest = pl.checksumArr.First();
                 //Console.WriteLine("Player "+pl.pid + "(S:"+pl.syncCounter+") claims the current checksum is "+pl.latestChecksum);
                 if(checksumPools.ContainsKey(latest)){
@@ -618,22 +641,32 @@ namespace Banshee
 
                 if(cc.extra==null){ //lobby message
                     Console.WriteLine("[LOBBY] " + p.name + ": " + msg);
+                    if(msg[0] == '!'){
+                        hidden = HandleClientCommand(p,msg);
+                    }
                 }else{
                     byte[] extra = (byte[])cc.extra;
                     if(extra.Length != 4)  //malformed somehow
                         return;
+                    
+                    Console.WriteLine("INGAME CHAT FROM "+extra[0]+": "+msg);
 
                     if(extra[0] == 0){ //ingame message to ALL
                         Console.WriteLine("[ALL] " + p.name + ": " + msg);
 
                     }else if(extra[0] == 2){ //ingame message to OBSERVERS
+                        //Unfortunately, this does not fire when there is a single observer. Really a shame, since that observer can only talk in observer chat...
                         Console.WriteLine("[OBS] " + p.name + ": " + msg);
+                    }else if(extra[0] == 3){
+                        Console.WriteLine("[PM "+cc.fromPID+"->"+cc.toPIDs[0]+"] "+p.name+": "+msg);
+                    }
+
+                    if(msg[0] == '!'){
+                        hidden = HandleClientCommand(p,msg,extra[0]);
                     }
                 }
 
-                if(msg[0] == '!'){
-                    hidden = HandleClientCommand(p,msg);
-                }
+
 
                 if(!hidden){
                     x0fCHATFROMHOST cfh = new x0fCHATFROMHOST();
@@ -685,28 +718,60 @@ namespace Banshee
         }
 
         //TODO make an actual command handler class (and package possibly) with actual wrappers and handlers. rather than just a bunch of if statements.
-        public bool HandleClientCommand(ConnectedPlayer p, string msg){
-            Commands.HandleCommand(this,p,msg);
+        public bool HandleClientCommand(ConnectedPlayer p, string msg, byte channel = 0){
+            CommandResponse? crp = CommandHandler.HandleCommand(this,p,msg);
+            if(crp.HasValue){
+                CommandResponse cr = crp.Value;
+                if(cr.isResponsePrivate){
+                    HostSendChat(cr.response, new byte[]{p.pid}, p.pid, channel);
+                }else{
+                    HostSendChat(cr.response, null, GetHostPid(), channel);
+                }
+                return cr.isCommandHidden;
+            }else{
+                return false;
+            }
         }
 
         public void StartGame(){
             SendAll(new x0aCOUNTDOWNSTART());
             gameState = GameState.LOADING;
-            RemoveFakeHost(); //remove fake vhost, not necessary anymore.
+            if(players.Count>1){
+                RemoveFakeHost(); //remove fake vhost, not necessary anymore.
+            }
             SendAll(new x0bCOUNTDOWNEND());
+            if(players.Count==1){ //if theres only one actual player, we've been gnomed. put that lil boy in the game rq
+                isfakehostingame = true;
+                x08OTHERGAMELOADED fhgl = new x08OTHERGAMELOADED();
+                fhgl.pid=fakeHostPID;
+                SendAll(fhgl);
+            }
         }
 
-        public void HostSendChat(string msg, byte[] toPIDs){
-            //if ingame... send extramessage with extra[0]==0
+        public void HostSendChat(string msg, byte[] toPIDs = null, byte fromPID = 255, byte ingamechannel=0){
+            if(toPIDs == null){
+                var pidList = new List<byte>();
+                foreach (var p in players)
+                {
+                    pidList.Add(p.pid);
+                }
+                toPIDs = pidList.ToArray();
+            }
+            if(fromPID == 255)
+                fromPID = GetHostPid();
+            if(ingamechannel == 3)
+                fromPID = toPIDs[0];
+
             x0fCHATFROMHOST cfh = new x0fCHATFROMHOST();
             if(gameState == GameState.LOBBY){
                 cfh.command = (byte)CHATTOHOSTCOMMANDS.MESSAGE;
                 cfh.extra = null;
             }else if(gameState == GameState.INGAME){
+                cfh.fromPID = fromPID;
                 cfh.command = (byte)CHATTOHOSTCOMMANDS.MESSAGEEXTRA;
-                cfh.extra = new byte[]{0,0,0,0};
+                cfh.extra = new byte[]{ingamechannel,0,0,0};
             }
-            cfh.fromPID = GetHostPid();
+            cfh.fromPID = fromPID;
             cfh.toPIDs = toPIDs;
             cfh.args = msg;
             SendTo(toPIDs, cfh);
@@ -717,6 +782,24 @@ namespace Banshee
 
         public void UpdateSlots(){
             this.needToUpdateSlots = true;
+        }
+
+        public void CleanSlots(){
+            //does not work properly, but also seems like this isn't actually required. Might implement again later.
+
+            // foreach (var slot in slots)
+            // {
+            //     if(slot.pid == 0 && slot.computer == 0){ //there is no player or computer
+            //         if(slot.slotStatus == (byte)SlotStatus.OCCUPIED){
+            //             slot.slotStatus = (byte)SlotStatus.OPEN;
+            //         }
+            //     }
+            //     if(slot.slotStatus != (byte)SlotStatus.OCCUPIED){
+            //         slot.downloadStatus = 0xff;
+            //         if(gameMap.MapObservers > (byte)MAPOBSERVERS.NONE) //if the game HAS observers, the color should by default be 0x18
+            //             slot.color = 0x18;
+            //     }
+            // }
         }
 
         public ConnectedPlayer GetPlayer(int pid){

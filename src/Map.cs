@@ -255,8 +255,10 @@ namespace Banshee
             }
 
             if((MapObservers & (int)MAPOBSERVERS.ALLOWED) == (int)MAPOBSERVERS.ALLOWED || (MapObservers & (int)MAPOBSERVERS.REFEREES) == (int)MAPOBSERVERS.REFEREES){
-                while(Slots.Count < MAX_SLOTS){
-                    Slots.Add(new Slot(0,255,(byte)SlotStatus.OPEN,0,MAX_SLOTS,MAX_SLOTS,(byte)SlotRace.RANDOM));
+                var observercount = MAX_SLOTS;
+                if((MapOptions & (int)MAPOPTIONS.MELEE) == (int)MAPOPTIONS.MELEE) observercount = 12;
+                while(Slots.Count < observercount){
+                    Slots.Add(new Slot(0,255,(byte)SlotStatus.OPEN,0,MAX_SLOTS,MAX_SLOTS,(byte)SlotRace.RANDOM | (byte)SlotRace.SELECTABLE));
                 }
             }
 
@@ -293,9 +295,9 @@ namespace Banshee
             MapVisibility = (int)MAPVISIBILITY.ALWAYSVISIBLE;
             MapObservers = (int)MAPOBSERVERS.REFEREES;
             MapFlags = (int)(MAPFLAGS.FIXEDTEAMS | MAPFLAGS.TEAMSTOGETHER);
-            MapFilterMaker = (int)MAPFILTERMAKER.USER;
+            MapFilterMaker = (int)MAPFILTERMAKER.BLIZZARD;
             MapFilterSize = (int)MAPFILTERSIZE.LARGE;
-            MapFilterObservers = (int)MAPFILTEROBSERVERS.NONE;
+            MapFilterObservers = (int)MAPFILTEROBSERVERS.FULL;
         }
 
         public int GetGameFlags(){
