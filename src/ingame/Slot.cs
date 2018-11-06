@@ -9,7 +9,7 @@ namespace Banshee.Ingame
     {
         public byte pid, downloadStatus, slotStatus, computer, team, color, race, computertype, handicap;
 
-        public Slot(byte p=0, byte dS=255, byte sS=(byte)SlotStatus.OPEN, byte c=0, byte t=0, byte co=0, byte r=(byte)SlotRace.RANDOM,byte cT=(byte)SlotCompType.NORMAL, byte h=100){
+        public Slot(byte p=0, byte dS=255, byte sS=(byte)SlotStatus.OPEN, byte c=0, byte t=0, byte co=0, byte r=((byte)SlotRace.RANDOM | (byte)SlotRace.SELECTABLE),byte cT=(byte)SlotCompType.NORMAL, byte h=100){
             pid = p; downloadStatus = dS; slotStatus = sS; computer = c; team = t; color = co; race = r; computertype = cT; handicap = h;
         }
         public Slot(byte[] d){
@@ -56,6 +56,8 @@ namespace Banshee.Ingame
             return pid + " " + downloadStatus + " " + slotStatus + " " + computer + " " + team + " " + color + " " + race + " " + computertype + " " + handicap;
         }
     }
+
+    //teams: 0-23 is 1-24, 24 is observer
 
     public enum SlotStatus : byte {
         OPEN=0,

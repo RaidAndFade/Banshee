@@ -198,7 +198,7 @@ namespace Banshee.Ingame
             }
         }
 
-        public double getPing(){
+        public double GetPing(){
             if(pings.Count==0)
                 return -1;
             return pings.Average();
