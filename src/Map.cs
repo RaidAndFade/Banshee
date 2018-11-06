@@ -10,8 +10,8 @@ using Nito.KitchenSink.CRC;
 
 using Foole.Mpq;
 
-using Banshee.ingame;
-using Banshee.utils;
+using Banshee.Ingame;
+using Banshee.Utils;
 
 namespace Banshee
 {
@@ -290,8 +290,8 @@ namespace Banshee
 
         public void LoadGameVariables(){
             MapSpeed = (int)MAPSPEED.FAST;
-            MapVisibility = (int)MAPVISIBILITY.DEFAULT;
-            MapObservers = (int)MAPOBSERVERS.NONE;
+            MapVisibility = (int)MAPVISIBILITY.ALWAYSVISIBLE;
+            MapObservers = (int)MAPOBSERVERS.REFEREES;
             MapFlags = (int)(MAPFLAGS.FIXEDTEAMS | MAPFLAGS.TEAMSTOGETHER);
             MapFilterMaker = (int)MAPFILTERMAKER.USER;
             MapFilterSize = (int)MAPFILTERSIZE.LARGE;

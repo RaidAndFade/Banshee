@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-namespace Banshee.utils
+namespace Banshee.Utils
 {
     public class StatString
     {
