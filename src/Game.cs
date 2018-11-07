@@ -128,7 +128,7 @@ namespace Banshee
                     Task<TcpClient> c = tcpServer.AcceptTcpClientAsync();
 
                     handleNewClient(await c);
-                }catch(Exception e){
+                }catch(Exception){
                     if(!running) System.Console.WriteLine("[*] TcpThread Closed Gracefully");
                 }
             }
@@ -156,6 +156,7 @@ namespace Banshee
                     c.Close();
                 }
             }
+            await Task.Yield();
         }
         public bool isValidJr(x1eJOINREQUEST jr){
             Console.WriteLine("Received JoinRequest from "+jr.name+" at "+jr.iip+":"+jr.port+".");
@@ -223,8 +224,8 @@ namespace Banshee
                     //SENDING SLOTINFOJOIN
                     x04SLOTINFOJOIN p = new x04SLOTINFOJOIN();
                     p.slots = this.slots;
-                    p.port = (ushort)((IPEndPoint) pp.socket.Client.RemoteEndPoint).Port; //could also do pp.joinreq.port and pp.joinreq.ip
-                    p.ip = (uint)((IPEndPoint) pp.socket.Client.RemoteEndPoint).Address.Address; //this gives warning no matter what apparently.
+                    p.port = 0;//(ushort)((IPEndPoint) pp.socket.Client.RemoteEndPoint).Port; //could also do pp.joinreq.port and pp.joinreq.ip
+                    p.ip = 0;//(uint)((IPEndPoint) pp.socket.Client.RemoteEndPoint).Address.Address; //this gives warning no matter what apparently.
                     p.pid = pid;
                     p.playerSlots = (byte)gameMap.MapNumPlayers;
                     p.layoutStyle = gameMap.GetMapLayoutStyle();
@@ -425,8 +426,8 @@ namespace Banshee
             x06PLAYERINFO pi = new x06PLAYERINFO();
             pi.pid = p.pid;
             pi.name = p.name;
-            pi.externalIp = BitConverter.GetBytes((int)((IPEndPoint) p.pp.socket.Client.RemoteEndPoint).Address.Address);
-            pi.internalIp = BitConverter.GetBytes(p.pp.joinReq.iip);
+            pi.externalIp = new byte[]{0,0,0,0};//BitConverter.GetBytes((int)((IPEndPoint) p.pp.socket.Client.RemoteEndPoint).Address.Address);
+            pi.internalIp = new byte[]{0,0,0,0};//BitConverter.GetBytes(p.pp.joinReq.iip);
             return pi;
         }
 

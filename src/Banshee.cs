@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Linq;
@@ -118,35 +119,37 @@ namespace Banshee
 
 
         async void onPacket(Object packet, IPEndPoint from){
-            try{
-                if(packet is x2fREQUESTGAME){
-                    x2fREQUESTGAME p = (x2fREQUESTGAME) packet;
-                    if(g.id == p.gameId){
-                        Console.WriteLine("Responding to gameinforequest");
-                        g.sendGameDetails(from);
+            await Task.Run(()=>{
+                try{
+                    if(packet is x2fREQUESTGAME){
+                        x2fREQUESTGAME p = (x2fREQUESTGAME) packet;
+                        if(g.id == p.gameId){
+                            Console.WriteLine("Responding to gameinforequest");
+                            g.sendGameDetails(from);
+                        }
+                    }else if(packet is x31CREATEGAME){
+                        x2fREQUESTGAME p = new x2fREQUESTGAME();
+                        p.product = "W3XP";
+                        p.version = 30;
+                        p.gameId = ((x31CREATEGAME)packet).gameId;
+                        sendUDPPacket(p,from);
+                    }else if(packet is x30GAMEDETAILS){
+                        x30GAMEDETAILS p = (x30GAMEDETAILS) packet;
+                        Console.WriteLine("GAME CREATED IN LAN : ");
+                        Console.WriteLine(p.product);
+                        Console.WriteLine(p.gameId);
+                        Console.WriteLine(p.gameName);
+                        Console.WriteLine(p.players + " / " + p.slots); 
+                        Console.WriteLine(string.Join('-',p.stats));
+                    }else if(packet is x32REFRESHGAME){
+                        //idgaf lol
+                    }else{
+                        Console.WriteLine("Unhandled packet " + packet.GetType().Name + " received.");
                     }
-                }else if(packet is x31CREATEGAME){
-                    x2fREQUESTGAME p = new x2fREQUESTGAME();
-                    p.product = "W3XP";
-                    p.version = 30;
-                    p.gameId = ((x31CREATEGAME)packet).gameId;
-                    sendUDPPacket(p,from);
-                }else if(packet is x30GAMEDETAILS){
-                    x30GAMEDETAILS p = (x30GAMEDETAILS) packet;
-                    Console.WriteLine("GAME CREATED IN LAN : ");
-                    Console.WriteLine(p.product);
-                    Console.WriteLine(p.gameId);
-                    Console.WriteLine(p.gameName);
-                    Console.WriteLine(p.players + " / " + p.slots); 
-                    Console.WriteLine(string.Join('-',p.stats));
-                }else if(packet is x32REFRESHGAME){
-                    //idgaf lol
-                }else{
-                    Console.WriteLine("Unhandled packet " + packet.GetType().Name + " received.");
+                }catch(Exception x){
+                    System.Console.WriteLine(x);
                 }
-            }catch(Exception x){
-                System.Console.WriteLine(x);
-            }
+            });
         }
 
         public void sendUDPPacket(IPacket p, IPEndPoint to){

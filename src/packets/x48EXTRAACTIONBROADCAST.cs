@@ -14,12 +14,12 @@ namespace Banshee.Packets
     {
         public List<GameAction> actions;
         public IPacket parse(BinaryReader br, int len){
-            x48EXTRAACTIONBROADCAST p = new x48EXTRAACTIONBROADCAST();
+            //x48EXTRAACTIONBROADCAST p = new x48EXTRAACTIONBROADCAST();
             // p.product = ConvertUtils.parseReverseString(br,4);
             // p.version = br.ReadUInt32();
             // p.gameId = br.ReadUInt32();
             throw new Exception("x48EXTRAACTIONBROADCAST.parse() is Not implemented");
-            return p;
+            //return p;
         }
 
         public byte[] toBytes(){

@@ -164,7 +164,7 @@ namespace Banshee.Ingame
             }
         }
         
-        async void onPacket(IPacket packet){
+        void onPacket(IPacket packet){
             if(packet is x42MAPSIZEVERIFY){
                 var p = (x42MAPSIZEVERIFY)packet;
                 Console.WriteLine(string.Join("-",p.mapSize));
@@ -218,15 +218,5 @@ namespace Banshee.Ingame
             netwritebuff.Clear();
             pp.networkStream.Write(buf,0,buf.Length);
         }
-    }
-    public class Player
-    {
-        string name;
-        byte color;
-        byte team;
-        byte race;
-        byte comptype;
-        byte downloadstatus;
-        byte slotstatus;
     }
 }

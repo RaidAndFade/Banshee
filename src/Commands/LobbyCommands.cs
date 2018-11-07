@@ -98,7 +98,6 @@ namespace Banshee.Commands{
                 g.UpdateSlots();
                 return new CommandResponse("Set Slot "+sid+" to be COMPUTER ( EASY )",false,false);
             }
-            return null;
         }
     }
 }
