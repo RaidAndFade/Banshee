@@ -1,3 +1,5 @@
+I would love to be informed otherwise, but I believe this project is unusable becaus eof warcraft 3 reforged's changes to LAN games.
+
 # Banshee
 A Warcraft 3 Game emulator, inspired by GHost++, Made in C#. Pretty Simple
 
